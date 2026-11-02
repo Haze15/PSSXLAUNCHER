@@ -1,0 +1,50 @@
+{
+  "name": "openxmb",
+  "version-string": "0.3.0-beta.3",
+  "dependencies": [
+    {
+      "name": "sdl2",
+      "features": [
+        "vulkan"
+      ]
+    },
+    "sdl2-image",
+    "libxmp",
+    {
+      "name": "sdl2-mixer",
+      "features": [
+        "libflac",
+        "mpg123",
+        "opusfile",
+        "libmodplug"
+      ]
+    },
+    {
+      "name": "ffmpeg",
+      "features": [
+        "ffmpeg",
+        "ffprobe",
+        "mp3lame",
+        "vorbis",
+        "zlib"
+      ]
+    },
+    "freetype",
+    "glm",
+    "gettext",
+    "harfbuzz",
+    "pkgconf",
+    "libarchive",
+    "zlib",
+    "curl",
+    "vulkan-loader",
+    {
+      "name": "glslang",
+      "host": true,
+      "features": [
+        "tools"
+      ]
+    }
+  ],
+  "builtin-baseline": "ef7dbf94b9198bc58f45951adcf1f041fcbc5ea0"
+}

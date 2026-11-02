@@ -1,0 +1,30 @@
+/* This file is a part of the OpenXMB desktop experience project.
+ * Copyright (C) 2025-2026 Syndromatic Ltd. All rights reserved
+ * Designed by Kavish Krishnakumar in Manchester.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+module;
+
+export module openxmb.render;
+
+export import :wave_renderer;
+export import :original_renderer;
+export import :particles_renderer;
+export import :procedural_wave_renderer;
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+export import :video_background;
+#endif
+export import :shaders;

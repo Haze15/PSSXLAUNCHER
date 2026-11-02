@@ -1,0 +1,185 @@
+/* This file is a part of the OpenXMB desktop experience project.
+ * Copyright (C) 2025-2026 Syndromatic Ltd. All rights reserved
+ * Designed by Kavish Krishnakumar in Manchester.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+module;
+
+#include "openxmb/music/library.hpp"
+
+#include <array>
+#include <cstdint>
+#include <filesystem>
+#include <functional>
+#include <future>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <atomic>
+#include <type_traits>
+#include <vector>
+
+export module openxmb.app:files_menu;
+
+import spdlog;
+import auroreengine;
+import openxmb.config;
+import openxmb.utils;
+import :menu_base;
+import :menu_utils;
+
+namespace app {
+    class shell;
+}
+
+export namespace menu {
+
+struct file_preview_context;
+
+enum class files_menu_profile {
+    generic,
+    photo,
+    music,
+    video,
+};
+
+// JSON-based file info structure to replace Gio::FileInfo
+struct file_info {
+    std::string name;
+    std::string display_name;
+    std::string content_type;
+    std::uint64_t size;
+    bool is_directory;
+    bool is_hidden;
+    bool is_symlink;
+    std::filesystem::file_time_type modification_time;
+    
+    file_info() = default;
+    file_info(const std::filesystem::directory_entry& entry);
+};
+
+class files_menu : public simple_menu {
+    public:
+        files_menu(std::string name, auroreengine::texture&& icon, app::shell* xmb, std::filesystem::path path, auroreengine::resource_loader& loader,
+            files_menu_profile profile = files_menu_profile::generic);
+        ~files_menu() override;
+
+        void on_open() override;
+        void on_close() override {
+            simple_menu::on_close();
+            stop_scan();
+            if(selected_submenu < extra_data_entries.size()) {
+                old_selected_item = extra_data_entries[selected_submenu].path;
+            }
+            clear_entries();
+            extra_data_entries.clear();
+            {
+                std::lock_guard<std::mutex> lk(cache_mutex);
+                last_scanned_path.clear();
+                cached_file_infos.clear();
+            }
+        }
+
+        unsigned int get_submenus_count() const override;
+        menu_entry& get_submenu(unsigned int index) const override;
+        result activate(action action) override;
+
+        void get_button_actions(std::vector<std::pair<action, std::string>>& v) override;
+
+        static constexpr auto filter_all = [](const file_info&) { return true; };
+        static constexpr auto filter_visible = [](const file_info& info) {
+            return !info.is_hidden;
+        };
+
+        static constexpr auto sort_by_name = [](const file_info& a, const file_info& b) {
+            return a.display_name.compare(b.display_name) < 0;
+        };
+        static constexpr auto sort_by_size = [](const file_info& a, const file_info& b) {
+            return a.size < b.size;
+        };
+        static constexpr auto sort_by_type = [](const file_info& a, const file_info& b) {
+            return a.content_type.compare(b.content_type) < 0;
+        };
+
+        using filter_entry_type = std::pair<std::string_view, std::add_pointer_t<bool(const file_info&)>>;
+        static constexpr std::array filters{
+            filter_entry_type{"Normal", filter_visible},
+            filter_entry_type{"All files", filter_all},
+        };
+
+        using sort_entry_type = std::pair<std::string_view, std::add_pointer_t<bool(const file_info& a, const file_info& b)>>;
+        static constexpr std::array sorts{
+            sort_entry_type{"Name", sort_by_name},
+            sort_entry_type{"Size", sort_by_size},
+            sort_entry_type{"Type", sort_by_type},
+        };
+    private:
+        void start_scan_async();
+        void ensure_built() const; // may rebuild view entries from cache lazily
+        void stop_scan();
+        void reload();
+        void resort();
+        void rebuild_entries_from_cache();
+        void clear_entries();
+        std::unique_ptr<menu_entry> make_media_entry(const file_info& info,
+            const std::filesystem::path& source, std::function<result(action)> activate);
+        void show_sort_filter_options();
+        bool music_root() const;
+        bool playlist_directory() const;
+        void add_music_library_entries();
+        result music_actions(const std::filesystem::path& source, std::vector<openxmb::music::QueueEntry> tracks = {});
+        result activate_file(const file_info& info, action action);
+        result open_file(const file_info& info);
+        void show_file_information(const file_info& info, const std::filesystem::path& file_path);
+
+        app::shell* xmb;
+        std::filesystem::path path;
+        auroreengine::resource_loader& loader;
+        files_menu_profile profile = files_menu_profile::generic;
+        std::shared_ptr<file_preview_context> previews;
+
+        struct extra_data {
+            std::filesystem::path path;
+            file_info info;
+            std::vector<openxmb::music::QueueEntry> tracks;
+        };
+        std::vector<extra_data> extra_data_entries;
+
+        std::function<bool(const file_info&)> filter = filter_visible;
+        std::function<bool(const file_info& a, const file_info& b)> sort = sort_by_name;
+
+        int selected_filter = 0;
+        int selected_sort = 0;
+        bool sort_descending = false;
+
+        std::filesystem::path old_selected_item;
+        // This is extremely hacky, but it works for now.
+        std::shared_ptr<bool> exists_flag = std::make_shared<bool>(true);
+
+        // Cache last directory scan to avoid I/O on resort/filter changes
+        std::filesystem::path last_scanned_path;
+        mutable std::vector<file_info> cached_file_infos;
+        std::vector<openxmb::music::LibraryTrack> cached_music_tracks;
+        // Async scan machinery
+        mutable std::mutex cache_mutex;
+        mutable std::atomic<bool> scanning{false};
+        mutable std::atomic<bool> needs_rebuild{false};
+        mutable std::atomic<uint64_t> scan_generation{0};
+        std::thread scan_worker;
+};
+
+}

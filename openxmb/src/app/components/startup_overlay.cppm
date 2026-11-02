@@ -1,0 +1,59 @@
+/* This file is a part of the OpenXMB desktop experience project.
+ * Copyright (C) 2025-2026 Syndromatic Ltd. All rights reserved
+ * Designed by Kavish Krishnakumar in Manchester.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+module;
+
+#include <chrono>
+#include <string>
+
+export module openxmb.app:startup_overlay;
+
+import auroreengine;
+import glm;
+import spdlog;
+import openxmb.config;
+import :component;
+
+namespace app {
+
+// Simple boot splash: plays startup jingle and fades text in/out
+export class startup_overlay : public component, public event_receiver {
+  public:
+    startup_overlay() = default;
+    ~startup_overlay() override;
+
+    result tick(app::shell*) override;
+    result on_event(const event&) override;
+    void render(auroreengine::gui_renderer& renderer, app::shell*) override;
+    // Opaque so menus do not render behind the intro (PS3-like behavior)
+    [[nodiscard]] bool is_opaque() const override { return !visual_complete && !revealing_menu; }
+    [[nodiscard]] bool do_fade_in() const override { return true; }
+    [[nodiscard]] bool do_fade_out() const override { return false; }
+
+  private:
+    void* startup_sound { nullptr };
+    int startup_channel { -1 };
+    bool started_audio { false };
+    bool audio_finished_logged { false };
+    bool visual_complete { false };
+    bool revealing_menu { false };
+    bool warning_visible { false };
+    app::shell* host { nullptr };
+};
+
+}

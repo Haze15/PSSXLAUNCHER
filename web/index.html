@@ -1,0 +1,457 @@
+<!doctype html>
+<!--
+  PSSXLAUNCHER — XrossMediaBar-style home screen for Android TV.
+  Based on OpenXMB 0.3.0-beta.3 (Syndromatic Ltd, GPLv3): sounds, icons, Play font, colour tables, wave shader.
+  This file: GPLv3.
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, user-scalable=no">
+<title>PSSXLAUNCHER</title>
+<style>
+@font-face{font-family:Play;src:url(font/Play-Regular.ttf);font-weight:400}
+@font-face{font-family:Play;src:url(font/Play-Bold.ttf);font-weight:700}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;color:#fff;font-family:Play,Roboto,sans-serif;cursor:none;user-select:none}
+#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;background:#000}
+#bg,#img,#wave{position:absolute;left:0;top:0;width:1920px;height:1080px}
+#bg{transition:background 2s}
+#img{object-fit:cover;opacity:0;transition:opacity 1s}
+#img.on{opacity:1}
+#wave{transition:opacity 1s}
+#shade{position:absolute;inset:0;background:radial-gradient(130% 100% at 30% 35%,rgba(0,0,0,0) 40%,rgba(0,0,0,.45) 100%);pointer-events:none}
+#ui{position:absolute;inset:0;opacity:0;transition:opacity 1.2s}
+#ui.on{opacity:1}
+
+/* clock */
+#clock{position:absolute;right:110px;top:62px;text-align:right;text-shadow:0 0 8px rgba(0,0,0,.35)}
+#clock .t{font-size:34px;letter-spacing:1px;padding-left:22px;border-left:2px solid rgba(255,255,255,.75);display:inline-block;line-height:1.1}
+#clock .w{font-size:22px;opacity:.75;margin-top:8px}
+
+/* categories */
+.cat{position:absolute;left:0;top:0;transition:transform .32s cubic-bezier(.25,.8,.25,1)}
+.cicon{position:absolute;left:-64px;top:236px;width:128px;height:128px;object-fit:contain;opacity:.55;transform:scale(.82);
+  transition:opacity .3s,transform .3s;filter:drop-shadow(0 0 0 rgba(255,255,255,0))}
+.clabel{position:absolute;left:-200px;width:400px;top:372px;text-align:center;font-size:27px;opacity:0;transition:opacity .25s;text-shadow:0 0 10px rgba(255,255,255,.35)}
+.cat.cur .cicon{opacity:1;transform:scale(1);filter:drop-shadow(0 0 10px rgba(255,255,255,.55))}
+.cat.cur .clabel{opacity:1}
+.items{position:absolute;left:0;top:0;opacity:0;transition:opacity .25s;pointer-events:none}
+.cat.cur .items{opacity:1}
+
+/* items */
+.it{position:absolute;left:0;top:0;transition:transform .26s cubic-bezier(.25,.8,.25,1),opacity .26s}
+.ib{position:absolute;left:-80px;top:-56px;width:160px;height:112px;display:flex;align-items:center;justify-content:center;transition:transform .26s}
+.ib img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))}
+.ib.banner img{width:160px;height:90px;object-fit:cover;border-radius:6px}
+.ib.icon img{width:96px;height:96px}
+.ib.thumb img{width:150px;height:84px;object-fit:cover;border-radius:4px;box-shadow:0 0 0 2px rgba(255,255,255,.6)}
+.ib .letter{width:96px;height:96px;border-radius:22px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:700}
+.tx{position:absolute;left:110px;top:-30px;width:1150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx .a{font-size:28px;opacity:.72;transition:opacity .2s,font-size .2s}
+.tx .b{font-size:21px;opacity:0;margin-top:4px;transition:opacity .2s}
+.it.on .ib{transform:scale(1.22)}
+.it.on .tx{top:-36px}
+.it.on .tx .a{font-size:34px;opacity:1;text-shadow:0 0 12px rgba(255,255,255,.75),0 0 2px rgba(255,255,255,.9)}
+.it.on .tx .b{opacity:.85}
+.it.dim .tx .a{opacity:.4}
+.it.hidden{opacity:0}
+
+/* option panel (the PS3 "triangle" menu) */
+#side{position:absolute;right:0;top:0;width:620px;height:1080px;transform:translateX(105%);transition:transform .3s cubic-bezier(.25,.8,.25,1);
+  background:linear-gradient(90deg,rgba(0,0,0,0) 0,rgba(0,0,0,.72) 90px,rgba(0,0,0,.82) 100%)}
+#side.on{transform:none}
+#side h4{position:absolute;left:130px;top:150px;font-size:24px;font-weight:400;opacity:.65}
+#side .list{position:absolute;left:130px;right:40px;top:0;transition:transform .25s}
+#side .o{height:64px;line-height:64px;font-size:28px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:44px;position:relative}
+#side .o.on{opacity:1;text-shadow:0 0 12px rgba(255,255,255,.75)}
+#side .o.on::before{content:"";position:absolute;left:-6px;top:6px;right:0;bottom:6px;border-radius:6px;background:linear-gradient(90deg,rgba(255,255,255,.22),rgba(255,255,255,.04));z-index:-1}
+#side .o.chk::after{content:"●";position:absolute;left:8px;font-size:18px;opacity:.9}
+#side .txt{font-size:24px;line-height:1.6;opacity:.85;white-space:normal;padding:0 20px 0 0}
+
+/* photo viewer / live weather */
+#view,#live{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .35s}
+#view.on,#live.on{opacity:1}
+#view img{width:100%;height:100%;object-fit:contain}
+#view .cap{position:absolute;left:0;right:0;bottom:46px;text-align:center;font-size:24px;opacity:.75;text-shadow:0 0 6px #000}
+#live iframe{width:100%;height:100%;border:0}
+
+#toast{position:absolute;left:50%;top:70px;transform:translate(-50%,-20px);opacity:0;padding:14px 30px;border-radius:6px;font-size:24px;
+  background:rgba(0,0,0,.7);transition:opacity .3s,transform .3s;white-space:nowrap;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div>
+  <img id="img" alt="">
+  <canvas id="wave" width="960" height="540"></canvas>
+  <div id="shade"></div>
+  <div id="ui">
+    <div id="clock"><div class="t" id="time"></div><div class="w" id="wx"></div></div>
+    <div id="xmb"></div>
+  </div>
+  <div id="side"><h4 id="sideT"></h4><div class="list" id="sideL"></div></div>
+  <div id="view"><img id="viewI" alt=""><div class="cap" id="viewC"></div></div>
+  <div id="live"></div>
+  <div id="toast"></div>
+</div>
+<script src="colors.js"></script>
+<script src="wave.js"></script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const A = window.Android || null;
+const enc = encodeURIComponent;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k, d) { try { const v = A ? A.get(k) : localStorage.getItem(k); return v === null || v === '' || v === undefined ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { A ? A.set(k, String(v)) : localStorage.setItem(k, String(v)); } catch (e) {} }
+};
+const LAT = 47.978, LON = -4.084, PLACE = 'Quimper';
+const LIVE_URL = 'https://haze15.github.io/meteo/?noboot=1&mobile=0';
+
+// ------------------------------------------------------------------ settings
+const cfg = {
+  theme: store.get('theme', 'auto'),     // 'auto' (month colour, like the PS3) or 0..11
+  bg: store.get('bg', 'wave'),           // 'wave' or 'img:<file>'
+  wave: store.get('wave', '1') === '1',
+  sfx: store.get('sfx', '1') === '1',
+  boot: store.get('boot', '1') === '1'
+};
+const save = () => { for (const k in cfg) store.set(k, typeof cfg[k] === 'boolean' ? (cfg[k] ? '1' : '0') : cfg[k]); };
+const THEMES = ['Sable','Brique','Vert','Rose','Pomme','Lavande','Ciel','Bleu','Nuit','Violet','Orange','Rouge'];
+const WALLS = [['m_lucy','Lucy'],['m_lune','Edgerunners'],['m_rei','Rei'],['m_longinus','Lance de Longinus'],['m_link','Link'],['m_zelda','Zelda']];
+
+// ------------------------------------------------------------------ stage scale
+function fit() { const s = Math.min(innerWidth / 1920, innerHeight / 1080); $('#stage').style.transform = Math.abs(s - 1) < .01 ? '' : `scale(${s})`; }
+addEventListener('resize', fit); fit();
+
+// ------------------------------------------------------------------ sounds (OpenXMB AudioServer)
+const SND = {move: 'NSE.clicker.Opt.wav', back: 'NSE.clicker.Cancel.wav', ok: 'NSE.ui.Confirm.wav', cancel: 'NSE.ui.Cancel.wav',
+             err: 'NSE.ui.Error.wav', menu: 'NSE.questionMark.wav', boot: 'NSE.startup.ogg', charge: 'NSE.charge.wav'};
+let AC = null; const BUF = {};
+try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+function loadSounds() {
+  if (!AC) return Promise.resolve();
+  return Promise.all(Object.entries(SND).map(([k, f]) => fetch('snd/' + f).then(r => r.arrayBuffer())
+    .then(b => new Promise((ok, ko) => AC.decodeAudioData(b, ok, ko))).then(d => BUF[k] = d).catch(() => {})));
+}
+function sfx(k, force) {
+  if ((!cfg.sfx && !force) || !AC || !BUF[k]) return;
+  if (AC.state === 'suspended') AC.resume();
+  const s = AC.createBufferSource(); s.buffer = BUF[k];
+  const g = AC.createGain(); g.gain.value = k === 'move' ? .8 : 1;
+  s.connect(g); g.connect(AC.destination); s.start();
+}
+
+// ------------------------------------------------------------------ background: PS3 month colours, darker at night
+const hex = h => [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16));
+const rgbs = (c, k = 1) => `rgb(${c.map(v => Math.max(0, Math.min(255, Math.round(v * k)))).join(',')})`;
+function themeColours() {
+  const d = new Date(), m = d.getMonth(), h = d.getHours();
+  if (cfg.theme === 'auto') return {base: hex(XCOL.m[m]), now: hex(XCOL.h[m][h])};
+  const i = +cfg.theme, base = hex(XCOL.m[i]);
+  const k = (hex(XCOL.h[i][h]).reduce((a, b) => a + b) + 1) / (base.reduce((a, b) => a + b) + 1);
+  return {base, now: base.map(v => v * k)};
+}
+function paintBg() {
+  const {base, now} = themeColours();
+  const lum = (now[0] * .3 + now[1] * .59 + now[2] * .11) / 255;
+  // keep white text readable on bright months, and the colour visible late at night
+  const k = lum > .55 ? .55 / lum : lum < .16 ? Math.min(3, .16 / Math.max(lum, .01)) : 1;
+  $('#bg').style.background =
+    `radial-gradient(120% 120% at 18% 22%, ${rgbs(now, 1.18 * k)} 0%, ${rgbs(now, .82 * k)} 45%, ${rgbs(now, .34 * k)} 100%)`;
+  Wave.setColor(base.map(v => v / 255));
+  const img = cfg.bg.startsWith('img:') ? cfg.bg.slice(4) : '';
+  const el = $('#img');
+  if (img) { const u = img.startsWith('/') ? '/photo?w=1920&p=' + enc(img) : 'wp/' + img + '.jpg'; if (el.dataset.u !== u) { el.dataset.u = u; el.src = u; } el.classList.add('on'); }
+  else el.classList.remove('on');
+  const showWave = cfg.wave && Wave.ok();
+  $('#wave').style.opacity = showWave ? 1 : 0;
+  showWave ? Wave.start() : Wave.stop();
+}
+
+// ------------------------------------------------------------------ clock & weather
+function tick() {
+  const d = new Date();
+  $('#time').textContent = `${d.getDate()}/${d.getMonth() + 1}  ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+let wxAt = 0;
+const wxIcon = (c, day) => c >= 95 ? '⛈' : (c >= 71 && c <= 77) || c === 85 || c === 86 ? '❄' : c >= 51 ? '☂' : c === 45 || c === 48 ? '≋' : c >= 2 ? '☁' : day ? '☀' : '☾';
+async function weather() {
+  if (Date.now() - wxAt < 15 * 60e3) return;
+  wxAt = Date.now();
+  try {
+    const j = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,weather_code,is_day&timezone=auto`)).json();
+    $('#wx').textContent = `${wxIcon(j.current.weather_code, j.current.is_day)} ${Math.round(j.current.temperature_2m)}°  ${PLACE}`;
+  } catch (e) { wxAt = Date.now() - 13 * 60e3; }
+}
+setInterval(() => { tick(); weather(); }, 10000);
+
+// ------------------------------------------------------------------ apps
+const VIDEO = ['com.google.android.youtube.tv','com.netflix.ninja','com.amazon.amazonvideo.livingroom','com.disney.disneyplus','com.canal.android.canal',
+  'com.canalplus.canalplus','fr.francetv.pluzz','fr.tf1.mytf1','fr.m6.m6replay.by','tv.molotov.app','tv.twitch.android.app','com.apple.atve.androidtv.appletv',
+  'com.plexapp.android','org.xbmc.kodi','org.videolan.vlc','com.crunchyroll.crunchyroid','com.wbd.stream','tv.pluto.android','com.google.android.videos',
+  'com.mxtech.videoplayer.ad','tv.arte.plus7','com.adn.android','com.google.android.tv'];
+const MUSIC = ['com.spotify.tv.android','com.google.android.youtube.tvmusic','deezer.android.tv','com.deezer.android.tv','com.amazon.music.tv',
+  'com.apple.android.music','com.soundcloud.android','tunein.player','com.qobuz.music','radio.fr'];
+const NET = ['com.android.chrome','org.mozilla.tv.firefox','com.opera.browser','com.cloudmosa.puffinTV','com.android.vending','com.tcl.browser',
+  'com.seraphic.openinet.pre','com.android.browser','com.google.android.katniss','com.teamviewer.quicksupport.market'];
+const HIDE = ['com.google.android.tvlauncher','com.google.android.leanbacklauncher','com.google.android.apps.tv.launcherx','fr.meteo.accueil'];
+const MOCK = [['com.google.android.youtube.tv','YouTube',1],['com.netflix.ninja','Netflix',1],['com.amazon.amazonvideo.livingroom','Prime Video',1],
+  ['com.disney.disneyplus','Disney+',1],['com.canal.android.canal','myCANAL',1],['com.spotify.tv.android','Spotify',1],['fr.francetv.pluzz','france.tv',1],
+  ['org.videolan.vlc','VLC',1],['com.android.vending','Google Play Store',1],['com.android.tv.settings','Paramètres',0],['fr.meteo.veille','Météo',1],
+  ['com.android.chrome','Chrome',0],['com.ea.game.fifa','EA SPORTS FC',1,0,1],['com.mojang.minecraftpe','Minecraft',0,0,1]]
+  .map(([p, n, b, c, g]) => ({k: p + '/.Main', n, b: !!b, c: c === undefined ? -1 : c, g: !!g}));
+const pkg = k => k.split('/')[0];
+let APPS = [], appsSig = '';
+function sortApps(list, prio) {
+  let order = []; try { order = JSON.parse(store.get('order', '[]')); } catch (e) {}
+  const r = a => { const i = order.indexOf(a.k); if (i >= 0) return i; const p = prio ? prio.indexOf(pkg(a.k)) : -1; return p >= 0 ? 1000 + p : 5000; };
+  return list.slice().sort((x, y) => r(x) - r(y) || x.n.localeCompare(y.n, 'fr'));
+}
+function kindOf(a) {
+  const p = pkg(a.k), n = (a.n + ' ' + p).toLowerCase();
+  if (a.g || a.c === 0) return 'game';
+  if (MUSIC.includes(p) || a.c === 1 || /music|musique|radio|podcast|deezer|spotify/.test(n)) return 'music';
+  if (VIDEO.includes(p) || a.c === 2 || /video|vidéo|movie|film|stream|replay|player|iptv|anime/.test(n)) return 'video';
+  if (NET.includes(p) || a.c === 4 || a.c === 5 || /browser|navigat|chrome|firefox|web|vending|store|météo|meteo/.test(n)) return 'net';
+  return '';
+}
+function loadApps() {
+  let list = null, raw = '';
+  try { raw = A ? A.apps() : ''; list = JSON.parse(raw); } catch (e) {}
+  if (!list) { list = MOCK; raw = 'mock'; }
+  if (raw === appsSig && APPS.length) return false;
+  appsSig = raw;
+  APPS = list.filter(a => !HIDE.includes(pkg(a.k)));
+  return true;
+}
+const appIcon = a => ({src: '/icon?k=' + enc(a.k), kind: a.b ? 'banner' : 'icon', letter: a.n});
+function appItem(a) {
+  return {t: a.n, s: '', icon: appIcon(a), key: a.k,
+    act() { sfx('ok'); if (A) A.launch(a.k); else toast('Ouverture : ' + a.n); },
+    opts: () => [
+      {t: 'Ouvrir', act: () => { closeSide(); sfx('ok'); if (A) A.launch(a.k); }},
+      {t: 'Mettre en premier', act: () => { moveFirst(a.k); closeSide(); toast(a.n + ' en premier'); }},
+      {t: 'Informations sur l’appli', act: () => { closeSide(); if (A) A.appInfo(pkg(a.k)); }}
+    ]};
+}
+function moveFirst(k) {
+  let order = []; try { order = JSON.parse(store.get('order', '[]')); } catch (e) {}
+  order = [k].concat(order.filter(x => x !== k));
+  store.set('order', JSON.stringify(order));
+  build(true);
+}
+
+// ------------------------------------------------------------------ photos
+let PHOTOS = [];
+function photoList() {
+  const own = WALLS.map(([f, n]) => ({src: 'wp/' + f + '.jpg', th: 'wp/' + f + '_t.jpg', n, id: f}));
+  let box = [];
+  if (A && A.hasPerm()) { try { box = JSON.parse(A.photos()).slice(0, 80).map(p => ({src: '/photo?w=1920&p=' + enc(p), th: '/photo?w=320&p=' + enc(p), n: p.split('/').pop().replace(/\.\w+$/, ''), id: p})); } catch (e) {} }
+  return own.concat(box);
+}
+
+// ------------------------------------------------------------------ menu model
+const IC = n => ({src: 'ic/' + n + '.png', kind: 'icon'});
+const onOff = (v, a = 'Activé', b = 'Désactivé') => v ? a : b;
+function settingsItems() {
+  const themeName = cfg.theme === 'auto' ? 'Original (couleur du mois)' : THEMES[+cfg.theme];
+  const bgName = cfg.bg === 'wave' ? 'Vague (original)' : cfg.bg.startsWith('img:/') ? 'Photo de la box' : (WALLS.find(w => 'img:' + w[0] === cfg.bg) || [0, 'Image'])[1];
+  const pick = (title, list, cur, apply) => () => openSide(title, list.map(([v, t]) => ({t, chk: v === cur, act: () => { apply(v); save(); paintBg(); build(true); closeSide(); sfx('ok'); }})));
+  return [
+    {t: 'Thème', s: themeName, icon: IC('theme_setting'),
+      act: pick('Thème', [['auto', 'Original (couleur du mois)']].concat(THEMES.map((n, i) => [String(i), n])), String(cfg.theme), v => cfg.theme = v)},
+    {t: 'Fond d’écran', s: bgName, icon: IC('display_setting'),
+      act: pick('Fond d’écran', [['wave', 'Vague (original)']].concat(WALLS.map(([f, n]) => ['img:' + f, n])), cfg.bg, v => cfg.bg = v)},
+    {t: 'Vague', s: onOff(cfg.wave, 'Affichée', 'Masquée'), icon: IC('setting_item'),
+      act: pick('Vague', [[true, 'Affichée'], [false, 'Masquée']], cfg.wave, v => cfg.wave = v)},
+    {t: 'Sons du menu', s: onOff(cfg.sfx, 'Activés', 'Désactivés'), icon: IC('sound_setting'),
+      act: pick('Sons du menu', [[true, 'Activés'], [false, 'Désactivés']], cfg.sfx, v => cfg.sfx = v)},
+    {t: 'Son de démarrage', s: onOff(cfg.boot), icon: IC('sound_setting'),
+      act: pick('Son de démarrage', [[true, 'Activé'], [false, 'Désactivé']], cfg.boot, v => cfg.boot = v)},
+    {t: 'Économiseur météo', s: 'Lancer maintenant', icon: IC('tv'), act() { sfx('ok'); if (A) A.screensaver(); else toast('Économiseur météo'); }},
+    {t: 'Paramètres de la box', s: 'Réseau, image, son, applis…', icon: IC('system_setting'), act() { sfx('ok'); if (A) A.settings(); }},
+    {t: 'À propos', s: 'PSSXLAUNCHER ' + (A ? A.version() : '1.0'), icon: IC('onlinemanual'),
+      act() { openSide('À propos', [{txt: 'PSSXLAUNCHER — écran d’accueil façon XMB pour Android TV.<br><br>Basé sur OpenXMB 0.3.0-beta.3 (Syndromatic Ltd, GPLv3) : sons, icônes, police Play (OFL), couleurs et vague.<br>Vague adaptée de RetroArch (GPLv3).<br><br>Code : github.com/Haze15/PSSXLAUNCHER'}]); }}
+  ];
+}
+function photoItems() {
+  PHOTOS = photoList();
+  const items = PHOTOS.map((p, i) => ({t: p.n, s: i < WALLS.length ? 'Fond d’écran' : 'Photo', icon: {src: p.th, kind: 'thumb'},
+    act() { sfx('ok'); openView(i); },
+    opts: () => [{t: 'Afficher', act: () => { closeSide(); openView(i); }},
+                 {t: 'Définir comme fond d’écran', act: () => { setWall(p); closeSide(); }}]}));
+  if (A && !A.hasPerm()) items.push({t: 'Photos de la box', s: 'Autoriser l’accès aux photos', icon: IC('photo_default'), act() { sfx('ok'); A.askPerm(); }});
+  return items;
+}
+function setWall(p) {
+  cfg.bg = 'img:' + p.id; save(); paintBg(); build(true); sfx('ok'); toast('Fond d’écran : ' + p.n);
+}
+function netItems() {
+  return [{t: 'Météo en direct', s: PLACE, icon: IC('browser'), act() { sfx('ok'); openLive(); }}]
+    .concat(sortApps(APPS.filter(a => kindOf(a) === 'net'), NET).map(appItem));
+}
+const empty = (t) => [{t, s: '', icon: IC('default_h'), dim: true, act() { sfx('err'); }}];
+function catItems(id) {
+  if (id === 'set') return settingsItems();
+  if (id === 'photo') return photoItems();
+  if (id === 'net') return netItems();
+  if (id === 'tv') return sortApps(APPS).map(appItem);
+  const prio = {video: VIDEO, music: MUSIC, game: null}[id];
+  const l = sortApps(APPS.filter(a => kindOf(a) === id), prio).map(appItem);
+  return l.length ? l : empty({video: 'Aucune appli vidéo', music: 'Aucune appli de musique', game: 'Aucun jeu installé'}[id]);
+}
+const CATS = [
+  {id: 'set', n: 'Paramètres', ic: 'ic/cat_settings.png'},
+  {id: 'photo', n: 'Photo', ic: 'ic/cat_photo.png'},
+  {id: 'music', n: 'Musique', ic: 'ic/cat_music.png'},
+  {id: 'video', n: 'Vidéo', ic: 'ic/cat_movie.png'},
+  {id: 'tv', n: 'Applis', ic: 'ic/cat_tv.png'},
+  {id: 'game', n: 'Jeu', ic: 'ic/cat_game.png'},
+  {id: 'net', n: 'Réseau', ic: 'ic/cat_network.png'}
+];
+CATS.forEach(c => c.sel = 0);
+let cur = +store.get('cat', '3');
+if (!(cur >= 0 && cur < CATS.length)) cur = 3;
+
+// ------------------------------------------------------------------ layout & rendering
+const COLX = 560, CAT_DX = 230, SEL_Y = 482, DY = 116, ABOVE_Y = 168;
+function iconHTML(ic) {
+  const letter = ic.letter ? `<div class=letter>${esc(ic.letter.trim().charAt(0).toUpperCase())}</div>` : '';
+  const err = letter ? ` onerror="this.parentNode.className='ib icon';this.outerHTML='${letter.replace(/'/g, "\\'")}'"` : '';
+  return `<div class="ib ${ic.kind}"><img src="${esc(ic.src)}"${err}></div>`;
+}
+function build(keep) {
+  const root = $('#xmb');
+  CATS.forEach((c, ci) => {
+    const old = c.items && c.items[c.sel];
+    c.items = catItems(c.id);
+    if (keep && old) { const i = c.items.findIndex(x => (x.key && x.key === old.key) || x.t === old.t); if (i >= 0) c.sel = i; }
+    c.sel = Math.max(0, Math.min(c.sel, c.items.length - 1));
+    let el = c.el;
+    if (!el) {
+      el = c.el = document.createElement('div');
+      el.className = 'cat';
+      el.innerHTML = `<img class=cicon src="${c.ic}"><div class=clabel>${esc(c.n)}</div><div class=items></div>`;
+      root.appendChild(el);
+    }
+    el.querySelector('.items').innerHTML = c.items.map(it =>
+      `<div class="it${it.dim ? ' dim' : ''}">${iconHTML(it.icon)}<div class=tx><div class=a>${esc(it.t)}</div><div class=b>${esc(it.s || '')}</div></div></div>`).join('');
+  });
+  layout();
+}
+function layout() {
+  CATS.forEach((c, ci) => {
+    c.el.classList.toggle('cur', ci === cur);
+    c.el.style.transform = `translateX(${COLX + (ci - cur) * CAT_DX + (ci < cur ? -40 : ci > cur ? 40 : 0)}px)`;
+    const its = c.el.querySelectorAll('.it');
+    its.forEach((e, j) => {
+      let y;
+      if (j < c.sel) y = ABOVE_Y - (c.sel - 1 - j) * DY;
+      else if (j === c.sel) y = SEL_Y;
+      else y = SEL_Y + 150 + (j - c.sel - 1) * DY;
+      e.style.transform = `translateY(${y}px)`;
+      e.classList.toggle('on', j === c.sel && ci === cur);
+      e.classList.toggle('hidden', y < -80 || y > 1160);
+    });
+  });
+}
+
+// ------------------------------------------------------------------ overlays
+let side = null;
+function openSide(title, opts) {
+  side = {opts, sel: Math.max(0, opts.findIndex(o => o.chk))};
+  $('#sideT').textContent = title;
+  $('#sideL').innerHTML = opts.map(o => o.txt ? `<div class="o txt">${o.txt}</div>` : `<div class="o${o.chk ? ' chk' : ''}">${esc(o.t)}</div>`).join('');
+  $('#side').classList.add('on');
+  sfx('menu');
+  sideLayout();
+}
+function sideLayout() {
+  const os = $('#sideL').children;
+  [...os].forEach((e, i) => e.classList.toggle('on', i === side.sel && !side.opts[i].txt));
+  $('#sideL').style.transform = `translateY(${side.opts[0] && side.opts[0].txt ? 220 : 470 - side.sel * 64}px)`;
+}
+function closeSide() { side = null; $('#side').classList.remove('on'); }
+let view = null;
+function openView(i) { view = {i}; showView(); $('#view').classList.add('on'); }
+function showView() { const p = PHOTOS[view.i]; $('#viewI').src = p.src; $('#viewC').textContent = `${p.n}   ·   ◀ ▶   ·   OK maintenu : définir comme fond d’écran`; }
+function closeView() { view = null; $('#view').classList.remove('on'); }
+let live = false;
+function openLive() { live = true; $('#live').innerHTML = `<iframe src="${LIVE_URL}"></iframe>`; $('#live').classList.add('on'); }
+function closeLive() { live = false; $('#live').classList.remove('on'); setTimeout(() => { if (!live) $('#live').innerHTML = ''; }, 400); }
+
+// ------------------------------------------------------------------ input
+function move(dir) {
+  if (side) {
+    const n = side.opts.length; if (side.opts[0].txt) return;
+    if (dir === 'u' && side.sel > 0) { side.sel--; sfx('move'); } else if (dir === 'd' && side.sel < n - 1) { side.sel++; sfx('move'); }
+    sideLayout(); return;
+  }
+  if (view) {
+    if (dir === 'l' || dir === 'r') { view.i = (view.i + (dir === 'l' ? -1 : 1) + PHOTOS.length) % PHOTOS.length; sfx('move'); showView(); }
+    return;
+  }
+  if (live) return;
+  const c = CATS[cur];
+  if (dir === 'l' && cur > 0) { cur--; sfx('move'); }
+  else if (dir === 'r' && cur < CATS.length - 1) { cur++; sfx('move'); }
+  else if (dir === 'u' && c.sel > 0) { c.sel--; sfx('move'); }
+  else if (dir === 'd' && c.sel < c.items.length - 1) { c.sel++; sfx('move'); }
+  else return;
+  store.set('cat', cur);
+  layout();
+}
+function ok(long) {
+  if (side) { const o = side.opts[side.sel]; if (o && o.act) o.act(); else closeSide(); return; }
+  if (view) { if (long) { openSide('Photo', [{t: 'Définir comme fond d’écran', act: () => { setWall(PHOTOS[view.i]); closeSide(); }}]); } return; }
+  if (live) return;
+  const it = CATS[cur].items[CATS[cur].sel];
+  if (!it) return;
+  if (long && it.opts) { openSide(it.t, it.opts()); return; }
+  it.act();
+}
+function back() {
+  if (Date.now() - (back.t || 0) < 250) return; back.t = Date.now();
+  if (side) { closeSide(); sfx('back'); return; }
+  if (view) { closeView(); sfx('back'); return; }
+  if (live) { closeLive(); sfx('back'); return; }
+  const c = CATS[cur]; if (c.sel > 0) { c.sel = 0; layout(); sfx('back'); }
+}
+let pressT = null;
+const isOk = e => e.key === 'Enter' || e.key === ' ' || e.keyCode === 13 || e.keyCode === 23;
+addEventListener('keydown', e => {
+  if (AC && AC.state === 'suspended') AC.resume();
+  const dir = {ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'u', ArrowDown: 'd'}[e.key];
+  if (dir) { e.preventDefault(); move(dir); return; }
+  if (isOk(e)) {
+    e.preventDefault(); if (e.repeat) return;
+    clearTimeout(pressT); pressT = setTimeout(() => { pressT = null; ok(true); }, 650);
+    return;
+  }
+  if (e.key === 'Escape' || e.key === 'Backspace' || e.key === 'GoBack' || e.key === 'BrowserBack') { e.preventDefault(); back(); }
+  if (e.key === 'ContextMenu' || e.key === 'Menu') { e.preventDefault(); ok(true); }
+});
+addEventListener('keyup', e => { if (isOk(e) && pressT) { clearTimeout(pressT); pressT = null; ok(false); } });
+
+window.onBackKey = back;
+window.onHomeKey = () => { closeSide(); closeView(); if (live) closeLive(); layout(); };
+window.onHomeResume = () => { tick(); weather(); paintBg(); if (loadApps()) build(true); };
+window.onAppsChanged = () => { if (loadApps()) build(true); };
+window.onPerm = () => { build(true); };
+
+function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 2400); }
+
+// ------------------------------------------------------------------ start
+Wave.init($('#wave'));
+paintBg(); tick(); weather();
+loadApps(); build();
+setInterval(paintBg, 5 * 60e3);
+loadSounds().then(() => { if (cfg.boot) sfx('boot', true); });
+setTimeout(() => $('#ui').classList.add('on'), 700);
+</script>
+</body>
+</html>

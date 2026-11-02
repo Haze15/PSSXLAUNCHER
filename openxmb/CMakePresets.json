@@ -1,0 +1,161 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 28,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "default",
+      "displayName": "Release",
+      "description": "Native desktop Release build with media and desktop integrations.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/default",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "ENABLE_BROWSER": "ON",
+        "ENABLE_VIDEO_PLAYER": "ON",
+        "ENABLE_DISC_MEDIA": "ON",
+        "ENABLE_LIBRETRO": "ON",
+        "INTERFACE_FX_DEBUG": "OFF"
+      }
+    },
+    {
+      "name": "dev",
+      "displayName": "Developer Debug",
+      "description": "Debug build with compile commands for editor tooling.",
+      "inherits": "default",
+      "binaryDir": "${sourceDir}/build/dev",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "ci",
+      "displayName": "CI Release",
+      "description": "Release configuration used by scripts/headless-smoke.sh.",
+      "inherits": "default",
+      "binaryDir": "${sourceDir}/build/ci",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "windows-vcpkg",
+      "displayName": "Windows vcpkg Release",
+      "description": "Windows build using LLVM/Clang, Ninja, vcpkg, and app-local dependencies.",
+      "inherits": "default",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "binaryDir": "${sourceDir}/build/windows-vcpkg",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "windows-local-aurore",
+      "displayName": "Windows vcpkg + local AuroreEngine",
+      "description": "Windows build against a sibling AuroreEngine checkout.",
+      "inherits": "windows-vcpkg",
+      "binaryDir": "${sourceDir}/build/windows-local-aurore",
+      "cacheVariables": {
+        "AUROREENGINE_LOCAL": "$env{USERPROFILE}/Developer/AuroreEngine"
+      }
+    },
+    {
+      "name": "windows-vcpkg-dev",
+      "displayName": "Windows vcpkg Debug",
+      "inherits": "windows-local-aurore",
+      "binaryDir": "${sourceDir}/build/windows-vcpkg-dev",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "windows-native",
+      "displayName": "Native XMB Windows Release",
+      "description": "Self-discovering LLVM/Windows SDK/vcpkg build against the local AuroreEngine checkout.",
+      "inherits": "default",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "binaryDir": "${sourceDir}/build/native",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/windows-clang-vcpkg.cmake",
+      "cacheVariables": {
+        "AUROREENGINE_LOCAL": "$env{USERPROFILE}/Developer/AuroreEngine",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_TESTING": "ON",
+        "OPENXMB_IMPORT_XMB_WEB_COMPAT": "ON",
+        "OPENXMB_XMB_WEB_SOURCE": "$env{USERPROFILE}/Developer/xmb-web"
+      }
+    },
+    {
+      "name": "windows-native-c",
+      "displayName": "Native XMB Windows Release (Clang build dir)",
+      "description": "Same as windows-native but outputs to build/native-c — the parity workflow build directory used for headless captures and visual regression.",
+      "inherits": "windows-native",
+      "binaryDir": "${sourceDir}/build/native-c"
+    },
+    {
+      "name": "windows-native-dev",
+      "displayName": "Native XMB Windows Debug",
+      "inherits": "windows-native",
+      "binaryDir": "${sourceDir}/build/native-dev",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default"
+    },
+    {
+      "name": "dev",
+      "configurePreset": "dev"
+    },
+    {
+      "name": "ci",
+      "configurePreset": "ci"
+    },
+    {
+      "name": "windows-vcpkg",
+      "configurePreset": "windows-vcpkg"
+    },
+    {
+      "name": "windows-local-aurore",
+      "configurePreset": "windows-local-aurore"
+    },
+    {
+      "name": "windows-vcpkg-dev",
+      "configurePreset": "windows-vcpkg-dev"
+    },
+    {
+      "name": "windows-native",
+      "configurePreset": "windows-native",
+      "jobs": 2
+    },
+    {
+      "name": "windows-native-c",
+      "configurePreset": "windows-native-c",
+      "jobs": 2
+    },
+    {
+      "name": "windows-native-dev",
+      "configurePreset": "windows-native-dev",
+      "jobs": 2
+    }
+  ]
+}

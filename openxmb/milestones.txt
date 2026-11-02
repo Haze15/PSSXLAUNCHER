@@ -1,0 +1,52 @@
+project:
+  name: OpenXMB
+  scope: Native Vulkan desktop shell with AuroreEngine, C++23 modules and JSON configuration.
+  targets: Linux, macOS and Windows (platform-specific behavior requires testing)
+  deferred: OpenGL ES, H700/RG34XX and handheld distribution
+
+# Status describes implementation, not release acceptance. See docs/desktop-release.md
+# for workflows, validation commands and compatibility limits. The desktop build
+# and individual tests do not establish visual parity, performance or completeness.
+milestones:
+  - id: M1_scaffold
+    goal: Build and run the shell with JSON configuration.
+    status: Implemented; Linux desktop build verified in current development environment.
+    remaining: Validate runtime and installation on supported target platforms.
+  - id: M2_menu_fonts_icons
+    goal: Navigable crossbar with text, icons and menus.
+    status: Implemented and under visual review.
+    details: Native 1920x1080 layout, material icons, clock frame, glyph shadow/glow/fade, boot alignment, dialogs and keyboard are implemented. Theme and menu controls continue to be refined.
+    remaining: Complete visual and platform validation; packaged fallback artwork is replaceable.
+  - id: M3_audio_music_visualizer
+    goal: Music playback, visualizer and audio management.
+    status: Desktop playback and controls implemented; acceptance remains open.
+    details: Playlist, seeking, shuffle/repeat, volume, metadata, visualizers and continued playback are available. Wave transitions and format badges are implemented.
+    remaining: Validate sustained playback, visual quality and audio behavior on target systems; broader audio ducking remains future work.
+  - id: M4_video_player
+    goal: File playback, hardware acceleration and subtitles.
+    status: Desktop playback and controls implemented; acceptance remains open.
+    details: Software decoding, audio, seeking, speed, frame stepping and text subtitle selection are available; YUV conversion uses the GPU.
+    remaining: Hardware decoding, bitmap subtitles and target-device playback validation.
+  - id: M5_libretro_overlay
+    goal: Emulation with shell integration.
+    status: Software libretro host and shell integration implemented; full overlay goal remains open.
+    remaining: Hardware-context cores and broader core/platform validation.
+  - id: M6_browser
+    goal: Browser access and navigation from the shell.
+    status: Optional Linux/X11 WebKitGTK child surface and system-browser fallback implemented; integration validation continues.
+    details: The WebKit view renders real pages inside the shell and uses sandboxed processes. Native navigation and keyboard integration are under review.
+    remaining: Validate end-to-end shell interaction and platform behavior; native Wayland input is not established.
+  - id: M7_disc_media
+    goal: Media detection and playback.
+    status: Mounted-disc desktop workflows implemented; full optical-media support remains open.
+    remaining: Device, format and platform validation; protected playback is unsupported.
+  - id: M8_perf_release
+    goal: Release hygiene and performance validation.
+    status: In progress.
+    details: CMake presets, staged-install smoke tooling and renderer/resource improvements are present.
+    remaining: Complete release checks and measure on target hardware; no target frame rate has been validated.
+
+acceptance_targets_not_yet_validated:
+  - 60 FPS navigating the crossbar at 1080p on a mid-range integrated GPU.
+  - Smooth music and video playback without dropouts on target hardware.
+  - Platform and device coverage for emulation, browser and optical-media workflows.

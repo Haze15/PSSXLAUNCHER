@@ -1,0 +1,88 @@
+# C++ objects and libs
+/build/
+/dist/
+/out/
+/.workflow/
+/tests/xmb/reference_frames/
+/docs/superpowers/
+/docs/source-provenance.md
+/.vscode/
+/.idea/
+/.codex/
+/scratch/
+/tmp/
+/temp/
+/int_45h-PS3XMB-webgl-shader.txt
+/liquidglass-iconshader-demo.txt
+/interfaceFX/GraphicsServer/Screenshot*.png
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
+build.ninja
+.ninja_log
+.ninja_deps
+*.pcm
+*.dwo
+*.profraw
+*.profdata
+*.log
+CMakeUserPresets.json
+.DS_Store
+__pycache__/
+*.pyc
+*.obj
+*.slo
+*.lo
+*.o
+*.a
+*.la
+*.lai
+*.so
+*.so.*
+*.dll
+*.dylib
+
+# Qt-es
+object_script.*.Release
+object_script.*.Debug
+*_plugin_import.cpp
+/.qmake.cache
+/.qmake.stash
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.moc
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+*.qmlc
+*.jsc
+Makefile*
+*build-*
+*.qm
+*.prl
+
+# Qt unit tests
+target_wrapper.*
+
+# QtCreator
+*.autosave
+
+# QtCreator Qml
+*.qmlproject.user
+*.qmlproject.user.*
+
+# QtCreator CMake
+CMakeLists.txt.user*
+
+# QtCreator 4.8< compilation database
+compile_commands.json
+
+# QtCreator local machine specific files for imported projects
+*creator.user*
+
+*_qmlcache.qrc

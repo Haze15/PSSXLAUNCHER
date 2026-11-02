@@ -1,0 +1,258 @@
+/* XMBShell, a console-like desktop shell
+ * Copyright (C) 2025 - JCM
+ *
+ * This file (or substantial portions of it) is derived from XMBShell:
+ *   https://github.com/JnCrMx/xmbshell
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+module;
+
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <filesystem>
+#include <future>
+#include <optional>
+#include <source_location>
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include <utility>
+
+#include <glm/glm.hpp>
+
+export module openxmb.utils;
+
+export enum class result {
+    unsupported  = (1<<0),
+    success      = (1<<1),
+    failure      = (1<<2),
+
+    submenu	     = (1<<3),
+    close        = (1<<4),
+
+    ok_sound       = (1<<5),
+    error_rumble   = (1<<6),
+    confirm_sound  = (1<<7),
+    cancel_sound   = (1<<8),
+    back_sound     = (1<<9),
+    question_sound = (1<<10),
+};
+export inline result operator|(result a, result b) {
+    return static_cast<result>(static_cast<int>(a) | static_cast<int>(b));
+}
+export inline bool operator&(result a, result b) {
+    return static_cast<bool>(static_cast<int>(a) & static_cast<int>(b));
+}
+
+export enum class action {
+    none = 0,
+    left = 1,
+    right = 2,
+    up = 3,
+    down = 4,
+    ok = 5,
+    cancel = 6,
+    options = 7,
+    extra = 8,
+
+    _length,
+};
+export class action_receiver {
+    public:
+        virtual ~action_receiver() = default;
+        virtual result on_action(action action) {
+            return result::unsupported;
+        }
+};
+export class joystick_receiver {
+    public:
+        virtual ~joystick_receiver() = default;
+        virtual result on_joystick(unsigned int index, float x, float y) {
+            return result::unsupported;
+        }
+};
+export class mouse_receiver {
+    public:
+        virtual ~mouse_receiver() = default;
+        virtual result on_mouse_move(float x, float y) {
+            return result::unsupported;
+        }
+        virtual result on_mouse_scroll(float x) {
+            return result::unsupported;
+        }
+};
+
+export namespace utils
+{
+    // JSON-based icon resolution instead of Gio::Icon
+    std::optional<std::filesystem::path> resolve_icon_from_json(const std::string& icon_name);
+
+    template<typename R>
+    bool is_ready(std::future<R> const& f)
+    { return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready; }
+
+    template<typename R>
+    bool is_ready(std::shared_future<R> const& f)
+    { return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready; }
+
+    std::string to_fixed_string(double d, int n);
+
+    template<int n, typename T>
+    std::string to_fixed_string(T d)
+    {
+        return to_fixed_string(d, n);
+    }
+
+    using time_point = std::chrono::time_point<std::chrono::system_clock>;
+    // Generic progress helper over any clock type; computes clamped [0,1]
+    template<typename Clock>
+    constexpr double progress(std::chrono::time_point<Clock> now,
+                              std::chrono::time_point<Clock> start,
+                              std::chrono::duration<double> duration) {
+        double d = std::chrono::duration<double>(now - start).count() / duration.count();
+        return std::clamp(d, 0.0, 1.0);
+    }
+
+    // PS3‑style dynamic XMB colour and brightness helpers
+    struct xmb_resolved_theme_colour {
+        glm::vec3 base_colour{};
+        float brightness = 1.0f;
+        glm::vec3 shaded_colour{};
+    };
+
+    glm::vec3 xmb_icon_colour(std::chrono::system_clock::time_point now);
+    glm::vec3 xmb_month_colour(int monthIndex /*0=Jan*/);
+    float     xmb_effective_day_night_hour(float localHour);
+    float     xmb_hour_brightness(int hour /*0..23*/, float minuteFrac);
+    glm::vec3 xmb_dynamic_colour(std::chrono::system_clock::time_point now);
+    xmb_resolved_theme_colour xmb_resolve_theme_colour(std::chrono::system_clock::time_point now);
+
+    template<typename T>
+    class aligned_wrapper {
+        public:
+            aligned_wrapper(void* data, std::size_t alignment) :
+                data(static_cast<std::byte*>(data)), alignment(alignment) {}
+
+            T& operator[](std::size_t i) {
+                return *reinterpret_cast<T*>(data + i * aligned(sizeof(T), alignment)); // NOLINT
+            }
+
+            const T& operator[](std::size_t i) const {
+                return *reinterpret_cast<const T*>(data + i * aligned(sizeof(T), alignment)); // NOLINT
+            }
+
+            T* operator+(std::size_t i) {
+                return reinterpret_cast<T*>(data + i * aligned(sizeof(T), alignment)); // NOLINT
+            }
+
+            std::size_t offset(std::size_t i) const {
+                return i * aligned(sizeof(T), alignment);
+            }
+        private:
+            constexpr static std::size_t aligned(std::size_t size, std::size_t alignment) {
+                return (size + alignment - 1) & ~(alignment - 1);
+            }
+
+            std::byte* data;
+            std::size_t alignment;
+    };
+
+    std::string demangle(const char* name);
+
+    template <class T>
+    std::string type_name(const T& t) {
+        return demangle(typeid(t).name());
+    }
+}
+
+namespace utils {
+    template<typename T>
+    constexpr std::string_view get_typename() {
+        std::string_view name = std::source_location::current().function_name();
+        constexpr std::string_view marker = "T = ";
+        if(auto start = name.find(marker); start != std::string_view::npos) {
+            name.remove_prefix(start + marker.size());
+            if(auto end = name.find_first_of(";]"); end != std::string_view::npos) {
+                name = name.substr(0, end);
+            }
+        }
+        return name;
+    }
+
+    // based on https://stackoverflow.com/questions/28828957/how-to-convert-an-enum-to-a-string-in-modern-c#comment115999268_55312360
+    template<auto... values>
+    constexpr std::string_view get_enum_values_impl() {
+        return std::source_location::current().function_name();
+    }
+
+    constexpr std::string_view trim_enum_value(std::string_view value) {
+        while(!value.empty() && value.front() == ' ') {
+            value.remove_prefix(1);
+        }
+        if(value.empty() || value.front() == '(') {
+            return {};
+        }
+        if(auto scope = value.rfind("::"); scope != std::string_view::npos) {
+            value.remove_prefix(scope + 2);
+        }
+        return value;
+    }
+
+    template<size_t N>
+    constexpr std::array<std::string_view, N> parse_enum_list(std::string_view sv) {
+        std::array<std::string_view, N> array;
+        size_t p = 0;
+        for(size_t i = 0; i<N; i++) {
+            size_t np = sv.find(",", p);
+            auto value = np == std::string_view::npos ? sv.substr(p) : sv.substr(p, np-p);
+            array[i] = trim_enum_value(value);
+            if(np == std::string_view::npos) {
+                break;
+            }
+            p = np + 1;
+        }
+        return array;
+    }
+
+    // based on https://stackoverflow.com/questions/28828957/how-to-convert-an-enum-to-a-string-in-modern-c#comment115999268_55312360
+    template<typename Enum, auto... values>
+    constexpr std::string_view get_enum_values_str(std::index_sequence<values...>) {
+        auto sv = get_enum_values_impl<static_cast<Enum>(values)...>();
+        constexpr std::string_view marker = "values = <";
+        if(auto start = sv.find(marker); start != std::string_view::npos) {
+            sv.remove_prefix(start + marker.size());
+        }
+        if(auto end = sv.rfind(">]"); end != std::string_view::npos) {
+            sv = sv.substr(0, end);
+        }
+
+        return sv;
+    }
+
+    template<typename Enum, size_t N = 256>
+    constexpr std::array<std::string_view, N> get_enum_values() {
+        constexpr auto sv = get_enum_values_str<Enum>(std::make_index_sequence<N>());
+        return parse_enum_list<N>(sv);
+    }
+
+    export template<typename Enum, size_t N = 256>
+    constexpr std::string_view enum_name(Enum e) {
+        constexpr auto list = get_enum_values<Enum, N>();
+        return list[std::to_underlying(e)];
+    }
+
+}

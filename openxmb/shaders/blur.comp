@@ -1,0 +1,72 @@
+/* XMBShell, a console-like desktop shell
+ * Copyright (C) 2025 - JCM
+ *
+ * This file (or substantial portions of it) is derived from XMBShell:
+ *   https://github.com/JnCrMx/xmbshell
+ *
+ * Modified by Syndromatic Ltd for OpenXMB.
+ * Portions Copyright (C) 2025 Syndromatic Ltd, Kavish Krishnakumar.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#version 450
+
+layout(push_constant) uniform UBO
+{
+    int axis;  // 0: horizontal, 1: vertical
+    int size;  // radius in pixels
+} constants;
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout (binding = 0, rgba16f) uniform readonly image2D inputImage;
+layout (binding = 1, rgba16f) uniform writeonly image2D outputImage;
+
+void main() {
+    ivec2 imageSize = imageSize(inputImage);
+
+    // Early-out if outside bounds
+    if(gl_GlobalInvocationID.x >= uint(imageSize.x) || gl_GlobalInvocationID.y >= uint(imageSize.y))
+        return;
+
+    // Gaussian 1D blur along selected axis; sigma derived from radius (approx. r ≈ 2σ)
+    float r = float(max(constants.size, 0));
+    float sigma = max(1.0, r * 0.5);
+    float twoSigma2 = 2.0 * sigma * sigma;
+
+    vec4 acc = vec4(0.0);
+    float wsum = 0.0;
+
+    if(constants.axis == 0) {
+        int ix = int(gl_GlobalInvocationID.x);
+        int iy = int(gl_GlobalInvocationID.y);
+        for(int dx = -constants.size; dx <= constants.size; ++dx) {
+            float w = exp(-(float(dx*dx))/twoSigma2);
+            int sx = clamp(ix + dx, 0, imageSize.x - 1);
+            acc += w * imageLoad(inputImage, ivec2(sx, iy));
+            wsum += w;
+        }
+    } else {
+        int ix = int(gl_GlobalInvocationID.x);
+        int iy = int(gl_GlobalInvocationID.y);
+        for(int dy = -constants.size; dy <= constants.size; ++dy) {
+            float w = exp(-(float(dy*dy))/twoSigma2);
+            int sy = clamp(iy + dy, 0, imageSize.y - 1);
+            acc += w * imageLoad(inputImage, ivec2(ix, sy));
+            wsum += w;
+        }
+    }
+
+    imageStore(outputImage, ivec2(gl_GlobalInvocationID.xy), acc / max(wsum, 1e-6));
+}

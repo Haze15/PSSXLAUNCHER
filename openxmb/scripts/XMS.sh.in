@@ -1,0 +1,77 @@
+#!/bin/sh
+# Launcher script for OpenXMB
+DIR=$(cd "$(dirname "$0")" && pwd)
+
+# On macOS, help the Vulkan loader find MoltenVK if not configured.
+UNAME=$(uname -s 2>/dev/null)
+if [ "$UNAME" = "Darwin" ]; then
+    if [ -z "$VK_ICD_FILENAMES" ]; then
+        if command -v brew >/dev/null 2>&1; then
+            for FORMULA in molten-vk vulkan-sdk; do
+                OPT_PREFIX=$(brew --prefix "$FORMULA" 2>/dev/null || true)
+                if [ -n "$OPT_PREFIX" ]; then
+                    for CAND in \
+                        "$OPT_PREFIX/share/vulkan/icd.d/MoltenVK_icd.json" \
+                        "$OPT_PREFIX/etc/vulkan/icd.d/MoltenVK_icd.json"; do
+                        [ -f "$CAND" ] && { export VK_ICD_FILENAMES="$CAND"; break; }
+                    done
+                fi
+                [ -n "$VK_ICD_FILENAMES" ] && break
+            done
+        fi
+        # Common Homebrew prefixes
+        for PREFIX in "${HOMEBREW_PREFIX:-}" "/opt/homebrew" "/usr/local"; do
+            [ -n "$PREFIX" ] || continue
+            CAND="$PREFIX/share/vulkan/icd.d/MoltenVK_icd.json"
+            if [ -f "$CAND" ]; then
+                export VK_ICD_FILENAMES="$CAND"
+                break
+            fi
+        done
+        # Also check etc paths used by Homebrew
+        if [ -z "$VK_ICD_FILENAMES" ]; then
+            for PREFIX in "${HOMEBREW_PREFIX:-}" "/opt/homebrew" "/usr/local"; do
+                [ -n "$PREFIX" ] || continue
+                CAND="$PREFIX/etc/vulkan/icd.d/MoltenVK_icd.json"
+                if [ -f "$CAND" ]; then
+                    export VK_ICD_FILENAMES="$CAND"
+                    break
+                fi
+            done
+        fi
+        # Fallback to Vulkan SDK if installed
+        if [ -z "$VK_ICD_FILENAMES" ] && [ -n "$VULKAN_SDK" ]; then
+            CAND="$VULKAN_SDK/share/vulkan/icd.d/MoltenVK_icd.json"
+            if [ -f "$CAND" ]; then
+                export VK_ICD_FILENAMES="$CAND"
+            fi
+        fi
+        # Fallback to Homebrew Cellar (in case formula is not linked)
+        if [ -z "$VK_ICD_FILENAMES" ]; then
+            for C in \
+                "/usr/local/Cellar/molten-vk"/*"/share/vulkan/icd.d/MoltenVK_icd.json" \
+                "/opt/homebrew/Cellar/molten-vk"/*"/share/vulkan/icd.d/MoltenVK_icd.json"; do
+                [ -f "$C" ] && { export VK_ICD_FILENAMES="$C"; break; }
+            done
+        fi
+    fi
+fi
+
+# Default assets dir (if not set) -> prefer build-local share then installed share
+if [ -z "$XMB_ASSET_DIR" ]; then
+    if [ -d "$DIR/share/shell" ]; then
+        export XMB_ASSET_DIR="$DIR/share/shell"
+    elif [ -d "$DIR/../share/shell" ]; then
+        export XMB_ASSET_DIR="$DIR/../share/shell"
+    fi
+fi
+
+if [ -z "$XMB_LOCALE_DIR" ]; then
+    if [ -d "$DIR/locales" ]; then
+        export XMB_LOCALE_DIR="$DIR/locales"
+    elif [ -d "$DIR/../share/locale" ]; then
+        export XMB_LOCALE_DIR="$DIR/../share/locale"
+    fi
+fi
+
+exec "$DIR/XMS.bin" "$@"
