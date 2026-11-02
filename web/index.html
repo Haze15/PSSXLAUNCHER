@@ -149,9 +149,20 @@ addEventListener('resize', fit); fit();
 
 // ------------------------------------------------------------------ sounds (OpenXMB AudioServer)
 const SND = {move: 'NSE.clicker.Opt.wav', back: 'NSE.clicker.Cancel.wav', ok: 'NSE.ui.Confirm.wav', cancel: 'NSE.ui.Cancel.wav',
-             err: 'NSE.ui.Error.wav', menu: 'NSE.questionMark.wav', boot: 'startup.mp3', launch: 'app_boot.mp3'};
+             err: 'NSE.ui.Error.wav', menu: 'NSE.questionMark.wav', boot: 'startup.wav', launch: 'app_boot.wav'};
 let AC = null; const BUF = {};
-try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+// 'playback' = bigger audio buffer: no crackle when the TV box is busy drawing.
+// All sounds are 48 kHz / peaks at -3 dB or lower, and go through a limiter so overlapping sounds never clip.
+let OUT = null;
+try {
+  const C = window.AudioContext || window.webkitAudioContext;
+  try { AC = new C({latencyHint: 'playback'}); } catch (e) { AC = new C(); }
+  const lim = AC.createDynamicsCompressor();
+  lim.threshold.value = -6; lim.knee.value = 6; lim.ratio.value = 12; lim.attack.value = 0.002; lim.release.value = 0.15;
+  OUT = AC.createGain(); OUT.gain.value = 0.9;
+  OUT.connect(lim); lim.connect(AC.destination);
+} catch (e) { AC = null; }
+let lastMove = null;
 function loadSounds() {
   if (!AC) return Promise.resolve();
   return Promise.all(Object.entries(SND).map(([k, f]) => fetch('snd/' + f).then(r => r.arrayBuffer())
@@ -166,7 +177,12 @@ function sfx(k, force) {
   }
   const s = AC.createBufferSource(); s.buffer = BUF[k];
   const g = AC.createGain(); g.gain.value = k === 'move' ? .8 : 1;
-  s.connect(g); g.connect(AC.destination); s.start();
+  s.connect(g); g.connect(OUT);
+  if (k === 'move') {                       // fast scrolling: cut the previous click instead of stacking them
+    if (lastMove) { try { lastMove.g.gain.setTargetAtTime(0, AC.currentTime, 0.005); lastMove.s.stop(AC.currentTime + 0.03); } catch (e) {} }
+    lastMove = {s, g};
+  }
+  s.start(AC.currentTime + 0.01);
 }
 
 // ------------------------------------------------------------------ background: PS3 month colours, darker at night

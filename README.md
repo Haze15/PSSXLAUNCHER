@@ -10,7 +10,7 @@ OpenXMB est un programme pour PC (C++23 + Vulkan + SDL2). La puce graphique d'un
 - Barre horizontale de catégories : **Paramètres, Photo, Musique, Vidéo, Applis, Jeu, Réseau**, et liste verticale d'éléments, comme sur PS3.
 - Applis rangées automatiquement par catégorie (vidéo, musique, jeux, navigateurs…), et toutes dans « Applis ».
 - **Vague** animée et lisse (shader RetroArch/OpenXMB porté en WebGL 1, éclairage calculé par sommet, anticrénelage, 25 i/s) et **couleur du fond qui change selon le mois et l'heure**, avec les mêmes tableaux de couleurs qu'OpenXMB.
-- **Sons** d'OpenXMB pour le menu (déplacement, retour, options), plus `startup.mp3` au démarrage et `app_boot.mp3` au lancement d'une appli.
+- **Sons** d'OpenXMB pour le menu (déplacement, retour, options), plus `startup.wav` au démarrage et `app_boot.wav` au lancement d'une appli.
 - **Lancement d'appli façon PSP** : l'icône part au centre et grandit, son image remplit l'écran, un flash, puis noir et l'appli s'ouvre.
 - **OK maintenu** sur un élément : menu d'options (ouvrir, mettre en premier, infos sur l'appli, définir comme fond…).
 - Paramètres : thème de couleur, fond d'écran (vague ou image), vague affichée ou masquée, sons, son de démarrage, économiseur météo, paramètres de la box.
