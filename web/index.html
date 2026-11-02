@@ -16,7 +16,7 @@
 html,body{width:100%;height:100%;overflow:hidden;background:#000;color:#fff;font-family:Play,Roboto,sans-serif;cursor:none;user-select:none}
 #stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;background:#000}
 #bg,#img,#wave{position:absolute;left:0;top:0;width:1920px;height:1080px}
-#bg{transition:background 2s}
+#bg{}
 #img{object-fit:cover;opacity:0;transition:opacity 1s}
 #img.on{opacity:1}
 #wave{transition:opacity 1s}
@@ -30,11 +30,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;color:#fff;font
 #clock .w{font-size:22px;opacity:.75;margin-top:8px}
 
 /* categories */
-.cat{position:absolute;left:0;top:0;transition:transform .32s cubic-bezier(.25,.8,.25,1)}
+.cat{position:absolute;left:0;top:0;transition:transform .32s cubic-bezier(.25,.8,.25,1);will-change:transform}
+.cat.cur .it{will-change:transform}
 .cicon{position:absolute;left:-64px;top:236px;width:128px;height:128px;object-fit:contain;opacity:.55;transform:scale(.82);
-  transition:opacity .3s,transform .3s;filter:drop-shadow(0 0 0 rgba(255,255,255,0))}
-.clabel{position:absolute;left:-200px;width:400px;top:372px;text-align:center;font-size:27px;opacity:0;transition:opacity .25s;text-shadow:0 0 10px rgba(255,255,255,.35)}
-.cat.cur .cicon{opacity:1;transform:scale(1);filter:drop-shadow(0 0 10px rgba(255,255,255,.55))}
+  transition:opacity .3s,transform .3s}
+.clabel{position:absolute;left:-200px;width:400px;top:372px;text-align:center;font-size:27px;opacity:0;transition:opacity .25s}
+.cat.cur .cicon{opacity:1;transform:scale(1)}
 .cat.cur .clabel{opacity:1}
 .items{position:absolute;left:0;top:0;opacity:0;transition:opacity .25s;pointer-events:none}
 .cat.cur .items{opacity:1}
@@ -42,17 +43,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;color:#fff;font
 /* items */
 .it{position:absolute;left:0;top:0;transition:transform .26s cubic-bezier(.25,.8,.25,1),opacity .26s}
 .ib{position:absolute;left:-80px;top:-56px;width:160px;height:112px;display:flex;align-items:center;justify-content:center;transition:transform .26s}
-.ib img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))}
+.ib img{max-width:100%;max-height:100%;object-fit:contain}
 .ib.banner img{width:160px;height:90px;object-fit:cover;border-radius:6px}
 .ib.icon img{width:96px;height:96px}
 .ib.thumb img{width:150px;height:84px;object-fit:cover;border-radius:4px;box-shadow:0 0 0 2px rgba(255,255,255,.6)}
 .ib .letter{width:96px;height:96px;border-radius:22px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:700}
-.tx{position:absolute;left:110px;top:-30px;width:1150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx{position:absolute;left:110px;top:-30px;max-width:1000px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tx .a{font-size:28px;opacity:.72;transition:opacity .2s,font-size .2s}
 .tx .b{font-size:21px;opacity:0;margin-top:4px;transition:opacity .2s}
 .it.on .ib{transform:scale(1.22)}
 .it.on .tx{top:-36px}
-.it.on .tx .a{font-size:34px;opacity:1;text-shadow:0 0 12px rgba(255,255,255,.75),0 0 2px rgba(255,255,255,.9)}
+.it.on .tx .a{font-size:34px;opacity:1;text-shadow:0 0 10px rgba(255,255,255,.6)}
 .it.on .tx .b{opacity:.85}
 .it.dim .tx .a{opacity:.4}
 .it.hidden{opacity:0}
@@ -76,6 +77,24 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;color:#fff;font
 #view .cap{position:absolute;left:0;right:0;bottom:46px;text-align:center;font-size:24px;opacity:.75;text-shadow:0 0 6px #000}
 #live iframe{width:100%;height:100%;border:0}
 
+/* app launch, PSP style: icon flies to the centre, its art fills the screen, flash, then black */
+#launch{position:absolute;inset:0;pointer-events:none;display:none}
+#launch.on{display:block}
+#launch .bg{position:absolute;inset:-40px;background-size:cover;background-position:center;opacity:0;transform:scale(1.15);transition:opacity .7s ease,transform 2.4s ease-out}
+#launch .dark{position:absolute;inset:0;background:radial-gradient(70% 70% at 50% 50%,rgba(0,0,0,.25),rgba(0,0,0,.85));opacity:0;transition:opacity .7s}
+#launch .ic{position:absolute;left:0;top:0;width:195px;height:110px;display:flex;align-items:center;justify-content:center;transform-origin:50% 50%;
+  transition:transform .75s cubic-bezier(.2,.9,.25,1),opacity .5s}
+#launch .ic img{max-width:100%;max-height:100%;object-fit:contain;border-radius:6px}
+#launch .ic .letter{width:96px;height:96px;border-radius:22px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:700}
+#launch .ring{position:absolute;left:50%;top:50%;width:200px;height:200px;margin:-100px 0 0 -100px;border-radius:50%;opacity:0;
+  background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(255,255,255,.35) 45%,rgba(255,255,255,0));transform:scale(.2);transition:transform .9s ease-out,opacity .9s ease-out}
+#launch .name{position:absolute;left:0;right:0;top:640px;text-align:center;font-size:40px;opacity:0;transition:opacity .5s .35s;text-shadow:0 0 12px rgba(255,255,255,.5)}
+#launch .black{position:absolute;inset:0;background:#000;opacity:0;transition:opacity .45s}
+#launch.go .bg{opacity:.75;transform:scale(1.02)}
+#launch.go .dark{opacity:1}
+#launch.go .name{opacity:1}
+#launch.out .black{opacity:1}
+#ui.away{opacity:0;transition:opacity .35s}
 #toast{position:absolute;left:50%;top:70px;transform:translate(-50%,-20px);opacity:0;padding:14px 30px;border-radius:6px;font-size:24px;
   background:rgba(0,0,0,.7);transition:opacity .3s,transform .3s;white-space:nowrap;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
 #toast.on{opacity:1;transform:translate(-50%,0)}
@@ -94,6 +113,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;color:#fff;font
   <div id="side"><h4 id="sideT"></h4><div class="list" id="sideL"></div></div>
   <div id="view"><img id="viewI" alt=""><div class="cap" id="viewC"></div></div>
   <div id="live"></div>
+  <div id="launch"><div class="bg"></div><div class="dark"></div><div class="ring"></div><div class="ic"></div><div class="name"></div><div class="black"></div></div>
   <div id="toast"></div>
 </div>
 <script src="colors.js"></script>
@@ -129,7 +149,7 @@ addEventListener('resize', fit); fit();
 
 // ------------------------------------------------------------------ sounds (OpenXMB AudioServer)
 const SND = {move: 'NSE.clicker.Opt.wav', back: 'NSE.clicker.Cancel.wav', ok: 'NSE.ui.Confirm.wav', cancel: 'NSE.ui.Cancel.wav',
-             err: 'NSE.ui.Error.wav', menu: 'NSE.questionMark.wav', boot: 'NSE.startup.ogg', charge: 'NSE.charge.wav'};
+             err: 'NSE.ui.Error.wav', menu: 'NSE.questionMark.wav', boot: 'startup.mp3', launch: 'app_boot.mp3'};
 let AC = null; const BUF = {};
 try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
 function loadSounds() {
@@ -138,8 +158,12 @@ function loadSounds() {
     .then(b => new Promise((ok, ko) => AC.decodeAudioData(b, ok, ko))).then(d => BUF[k] = d).catch(() => {})));
 }
 function sfx(k, force) {
-  if ((!cfg.sfx && !force) || !AC || !BUF[k]) return;
-  if (AC.state === 'suspended') AC.resume();
+  if (!cfg.sfx && !force) return;
+  if (!AC || !BUF[k] || AC.state !== 'running') {   // WebAudio not ready/allowed: plain <audio> as a fallback
+    if (AC && AC.state === 'suspended') AC.resume();
+    try { const au = new Audio('snd/' + SND[k]); au.play().catch(() => {}); } catch (e) {}
+    return;
+  }
   const s = AC.createBufferSource(); s.buffer = BUF[k];
   const g = AC.createGain(); g.gain.value = k === 'move' ? .8 : 1;
   s.connect(g); g.connect(AC.destination); s.start();
@@ -231,9 +255,9 @@ function loadApps() {
 const appIcon = a => ({src: '/icon?k=' + enc(a.k), kind: a.b ? 'banner' : 'icon', letter: a.n});
 function appItem(a) {
   return {t: a.n, s: '', icon: appIcon(a), key: a.k,
-    act() { sfx('ok'); if (A) A.launch(a.k); else toast('Ouverture : ' + a.n); },
+    act() { launchApp(a); },
     opts: () => [
-      {t: 'Ouvrir', act: () => { closeSide(); sfx('ok'); if (A) A.launch(a.k); }},
+      {t: 'Ouvrir', act: () => { closeSide(); launchApp(a); }},
       {t: 'Mettre en premier', act: () => { moveFirst(a.k); closeSide(); toast(a.n + ' en premier'); }},
       {t: 'Informations sur l’appli', act: () => { closeSide(); if (A) A.appInfo(pkg(a.k)); }}
     ]};
@@ -360,6 +384,49 @@ function layout() {
   });
 }
 
+// ------------------------------------------------------------------ app launch (PSP game boot style)
+let launching = null;
+function launchApp(a) {
+  if (launching) return;
+  const L = $('#launch'), ic = L.querySelector('.ic'), src = '/icon?k=' + enc(a.k);
+  const sel = document.querySelector('.cat.cur .it.on .ib img');
+  ic.innerHTML = sel && sel.tagName === 'IMG' ? `<img src="${src}">` : `<div class=letter>${esc(a.n.charAt(0).toUpperCase())}</div>`;
+  L.querySelector('.bg').style.backgroundImage = a.b ? `url("${src}")` : 'none';
+  L.querySelector('.name').textContent = a.n;
+  const ring = L.querySelector('.ring');
+  // start exactly on the selected item, then fly to the centre and grow
+  ic.style.transition = 'none';
+  ic.style.transform = `translate(${COLX - 97}px, ${SEL_Y - 55}px) scale(1.22)`;
+  L.className = 'on';
+  $('#ui').classList.add('away');
+  sfx('launch', true);
+  void ic.offsetWidth;
+  ic.style.transition = '';
+  requestAnimationFrame(() => {
+    L.classList.add('go');
+    ic.style.transform = `translate(${960 - 97}px, ${470 - 55}px) scale(${a.b ? 2.6 : 2.2})`;
+  });
+  const T = launching = [];
+  T.push(setTimeout(() => {
+    ring.style.transition = 'none'; ring.style.opacity = 1; ring.style.transform = 'scale(.2)';
+    void ring.offsetWidth;
+    ring.style.transition = ''; ring.style.opacity = 0; ring.style.transform = 'scale(9)';
+  }, 900));
+  T.push(setTimeout(() => { L.classList.add('out'); Wave.stop(); }, 1900));
+  T.push(setTimeout(() => {
+    if (A) A.launch(a.k); else toast('Ouverture : ' + a.n);
+    T.push(setTimeout(endLaunch, A ? 4000 : 800));    // in case the app never opens
+  }, 2350));
+}
+function endLaunch() {
+  if (!launching) return;
+  launching.forEach(clearTimeout); launching = null;
+  const L = $('#launch'); L.className = '';
+  L.querySelector('.ic').style.transform = '';
+  $('#ui').classList.remove('away');
+  paintBg();
+}
+
 // ------------------------------------------------------------------ overlays
 let side = null;
 function openSide(title, opts) {
@@ -377,12 +444,12 @@ function sideLayout() {
 }
 function closeSide() { side = null; $('#side').classList.remove('on'); }
 let view = null;
-function openView(i) { view = {i}; showView(); $('#view').classList.add('on'); }
+function openView(i) { Wave.stop(); view = {i}; showView(); $('#view').classList.add('on'); }
 function showView() { const p = PHOTOS[view.i]; $('#viewI').src = p.src; $('#viewC').textContent = `${p.n}   ·   ◀ ▶   ·   OK maintenu : définir comme fond d’écran`; }
-function closeView() { view = null; $('#view').classList.remove('on'); }
+function closeView() { view = null; $('#view').classList.remove('on'); paintBg(); }
 let live = false;
-function openLive() { live = true; $('#live').innerHTML = `<iframe src="${LIVE_URL}"></iframe>`; $('#live').classList.add('on'); }
-function closeLive() { live = false; $('#live').classList.remove('on'); setTimeout(() => { if (!live) $('#live').innerHTML = ''; }, 400); }
+function openLive() { Wave.stop(); live = true; $('#live').innerHTML = `<iframe src="${LIVE_URL}"></iframe>`; $('#live').classList.add('on'); }
+function closeLive() { live = false; $('#live').classList.remove('on'); paintBg(); setTimeout(() => { if (!live) $('#live').innerHTML = ''; }, 400); }
 
 // ------------------------------------------------------------------ input
 function move(dir) {
@@ -425,6 +492,7 @@ let pressT = null;
 const isOk = e => e.key === 'Enter' || e.key === ' ' || e.keyCode === 13 || e.keyCode === 23;
 addEventListener('keydown', e => {
   if (AC && AC.state === 'suspended') AC.resume();
+  if (launching) { e.preventDefault(); return; }
   const dir = {ArrowLeft: 'l', ArrowRight: 'r', ArrowUp: 'u', ArrowDown: 'd'}[e.key];
   if (dir) { e.preventDefault(); move(dir); return; }
   if (isOk(e)) {
@@ -438,8 +506,8 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => { if (isOk(e) && pressT) { clearTimeout(pressT); pressT = null; ok(false); } });
 
 window.onBackKey = back;
-window.onHomeKey = () => { closeSide(); closeView(); if (live) closeLive(); layout(); };
-window.onHomeResume = () => { tick(); weather(); paintBg(); if (loadApps()) build(true); };
+window.onHomeKey = () => { endLaunch(); closeSide(); closeView(); if (live) closeLive(); layout(); };
+window.onHomeResume = () => { endLaunch(); tick(); weather(); paintBg(); if (loadApps()) build(true); };
 window.onAppsChanged = () => { if (loadApps()) build(true); };
 window.onPerm = () => { build(true); };
 

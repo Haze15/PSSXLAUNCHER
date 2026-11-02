@@ -91,7 +91,7 @@ public class Bridge {
     }
 
     @JavascriptInterface
-    public String version() { return "1.0"; }
+    public String version() { return "1.1"; }
 
     @JavascriptInterface
     public void settings() {
